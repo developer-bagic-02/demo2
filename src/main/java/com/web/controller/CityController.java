@@ -20,7 +20,7 @@ public class CityController {
 		return ser.getCities();
 	}
 	
-	@PostMapping("/citiess11")
+	@PostMapping("/citiess1")
 	public String postMethodName(@RequestBody String entity) {
 		//TODO: process POST request
 		
