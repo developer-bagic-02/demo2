@@ -60,6 +60,27 @@ jobs:
           echo "Changed files:"
           echo "$CHANGED_FILES"
 
+          # Process each changed file
+          for file in $CHANGED_FILES; do
+            echo "Processing file: $file"
+
+            # Convert Java source path to class path
+            class_file=$(echo $file | sed 's/src\/main\/java\///' | sed 's/\.java$/.class/')
+            class_file_path="target/classes/$class_file"
+            echo "Expected class file: $class_file_path"
+
+            # Check if the class file exists and copy it
+            if [ -f "$class_file_path" ]; then
+              echo "Found compiled class file: $class_file_path"
+              mkdir -p patch/$(dirname "$class_file")
+              cp "$class_file_path" "patch/$class_file"
+            else
+              echo "Compiled class file not found for: $file"
+            fi
+          done
+
+          echo "Patch created with modified class files."
+
       - name: Deploy to Tomcat Server
         env:
           JAVA_HOME: /opt/hostedtoolcache/Java_Adopt_jdk/17.0.11-9/x64
