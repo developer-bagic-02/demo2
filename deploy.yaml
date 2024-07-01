@@ -95,13 +95,6 @@ jobs:
             exit 1
           fi
 
-          echo "Extracting package to Tomcat webapps directory..."
-          if ssh -i private_key.pem $USERNAME@$SERVER_IP "tar -xzf /tmp/package.tar.gz -C $TOMCAT_DIR/webapps"; then
-            echo "Extraction successful"
-          else
-            echo "Extraction failed"
-            exit 1
-          fi
 
           echo "Restarting Tomcat server..."
           if ssh -i private_key.pem $USERNAME@$SERVER_IP "bash -c 'sh $TOMCAT_DIR/bin/shutdown.sh && sleep 5 && sudo sh $TOMCAT_DIR/bin/startup.sh'"; then
