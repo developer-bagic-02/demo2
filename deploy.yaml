@@ -13,9 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: List directory contents
-        run: ls -la
-
       - name: Set up JDK
         uses: actions/setup-java@v2
         with:
@@ -24,6 +21,16 @@ jobs:
 
       - name: Build with Maven
         run: mvn clean package
+
+      - name: Package compiled files
+        run: |
+          mkdir -p package/webapps/OtpProject-0.0.1-SNAPSHOT/WEB-INF/classes
+          cp -r target/classes/com/web/service/* package/webapps/OtpProject-0.0.1-SNAPSHOT/WEB-INF/classes/
+          cp -r src/main/webapp/* package/webapps/OtpProject-0.0.1-SNAPSHOT/  # Adjust this path based on your webapp files location
+          tar -czf package.tar.gz -C package .
+
+      - name: List directory contents
+        run: ls -la
 
       - name: Create SSH directory and known_hosts file
         run: |
@@ -53,27 +60,6 @@ jobs:
           echo "Changed files:"
           echo "$CHANGED_FILES"
 
-          # Process each changed file
-          for file in $CHANGED_FILES; do
-            echo "Processing file: $file"
-
-            # Convert Java source path to class path
-            class_file=$(echo $file | sed 's/src\/main\/java\///' | sed 's/\.java$/.class/')
-            class_file_path="target/classes/$class_file"
-            echo "Expected class file: $class_file_path"
-
-            # Check if the class file exists and copy it
-            if [ -f "$class_file_path" ]; then
-              echo "Found compiled class file: $class_file_path"
-              mkdir -p patch/$(dirname "$class_file")
-              cp "$class_file_path" "patch/$class_file"
-            else
-              echo "Compiled class file not found for: $file"
-            fi
-          done
-
-          echo "Patch created with modified class files."
-
       - name: Deploy to Tomcat Server
         env:
           JAVA_HOME: /opt/hostedtoolcache/Java_Adopt_jdk/17.0.11-9/x64
@@ -88,19 +74,26 @@ jobs:
           chmod 600 private_key.pem
           
           echo "Attempting SCP transfer..."
-          if scp -i private_key.pem -r patch/* $USERNAME@$SERVER_IP:$TOMCAT_DIR; then 
+          if scp -i private_key.pem package.tar.gz $USERNAME@$SERVER_IP:/tmp/; then
             echo "SCP transfer successful"
           else
             echo "SCP failed"
             exit 1
           fi
 
+          echo "Extracting package to Tomcat webapps directory..."
+          if ssh -i private_key.pem $USERNAME@$SERVER_IP "tar -xzf /tmp/package.tar.gz -C $TOMCAT_DIR/webapps"; then
+            echo "Extraction successful"
+          else
+            echo "Extraction failed"
+            exit 1
+          fi
 
           echo "Restarting Tomcat server..."
-          if ssh -i private_key.pem $USERNAME@$SERVER_IP "bash -c 'sh $TOMCAT_DIR/bin/shutdown.sh && sleep 5 && sudo sh $TOMCAT_DIR/bin/startup.sh'"; then
+          if ssh -i private_key.pem $USERNAME@$SERVER_IP "bash -c 'sh /opt/tomcat/bin/shutdown.sh && sleep 5 && sudo sh /opt/tomcat/bin/startup.sh'"; then
             echo "Tomcat restarted successfully"
           else
-            echo "Tomcat restart failed.."
+            echo "Tomcat restart failed"
             exit 1
           fi
           
