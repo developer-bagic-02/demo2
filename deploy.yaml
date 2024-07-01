@@ -107,7 +107,7 @@ jobs:
           if ssh -i private_key.pem $USERNAME@$SERVER_IP "bash -c 'sh $TOMCAT_DIR/bin/shutdown.sh && sleep 5 && sudo sh $TOMCAT_DIR/bin/startup.sh'"; then
             echo "Tomcat restarted successfully"
           else
-            echo "Tomcat restart failed"
+            echo "Tomcat restart failed.."
             exit 1
           fi
           
