@@ -13,7 +13,7 @@ public class CountryController {
 	public String getMseg() {
 		
 		
-		return "getApi.v2...!";
+		return "getApi.v3...!";
 	}
 	
 	@Autowired
